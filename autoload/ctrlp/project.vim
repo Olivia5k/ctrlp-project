@@ -24,21 +24,34 @@ endif
 fu! s:syntax()
   if !ctrlp#nosy()
     cal ctrlp#hicheck('CtrlPTabExtra', 'Comment')
-    cal ctrlp#hicheck('CtrlPProjectItem', 'Statement')
-    sy match CtrlPTabExtra '^\zs.*/\ze'
+    cal ctrlp#hicheck('CtrlPProjectSubmodule', 'Statement')
     " y u no work
-    sy match CtrlPProjectItem '.*/\zs.\+\ze$'
+    sy match CtrlPProjectSubmodule '.*/\zs.\+\ze/'
+    sy match CtrlPTabExtra '^\zs[^/]*/\ze'
   en
 endf
 
 function! ctrlp#project#init()
-  let default = ['~/git', '~/code', '~/vcs', '~/work', '~/projects']
+  let default = [
+        \ '~/git', '~/code', '~/vcs', '~/work', '~/projects', '~/.vim/bundle']
+
   for dir in extend(default, g:ctrlp_project_roots)
     let path = fnamemodify(expand(dir), ':a')
     for fp in split(globpath(path, '*'), '\n')
       if len(globpath(fp, '.git', 1)) != 0
+        let submodules = globpath(fp, '.gitmodules', 1)
         let key = fnamemodify(path, ':t') . '/' . fnamemodify(fp, ':t')
         let s:projects[key] = fp
+
+        if len(submodules) != 0
+          for line in readfile(submodules)
+            let ret = matchlist(line, '^\s*path = \(.*\)$')
+            if len(ret) != 0
+              " TODO: fix fp path to be correct
+              let s:projects[key . '/' . fnamemodify(ret[1], ':t')] = fp
+            endif
+          endfor
+        endif
       endif
     endfor
   endfor
