@@ -33,7 +33,7 @@ endf
 
 function! ctrlp#project#init()
   let default = [
-        \ '~/git', '~/code', '~/vcs', '~/work', '~/projects', '~/.vim/bundle']
+        \ '~/git', '~/code', '~/vcs', '~/work', '~/projects']
 
   for dir in extend(default, g:ctrlp_project_roots)
     let path = fnamemodify(expand(dir), ':a')
@@ -43,12 +43,13 @@ function! ctrlp#project#init()
         let key = fnamemodify(path, ':t') . '/' . fnamemodify(fp, ':t')
         let s:projects[key] = fp
 
+        " Submodule support
         if len(submodules) != 0
           for line in readfile(submodules)
             let ret = matchlist(line, '^\s*path = \(.*\)$')
             if len(ret) != 0
-              " TODO: fix fp path to be correct
-              let s:projects[key . '/' . fnamemodify(ret[1], ':t')] = fp
+              let spath = fp . '/' . ret[1]
+              let s:projects[key . '/' . fnamemodify(ret[1], ':t')] = spath
             endif
           endfor
         endif
