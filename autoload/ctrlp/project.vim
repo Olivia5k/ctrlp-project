@@ -26,6 +26,17 @@ else
   let g:ctrlp_ext_vars = [s:project_var]
 endif
 
+if !exists('g:ctrlp_projects') || empty(g:ctrlp_projects)
+  let g:ctrlp_projects = {
+      \ '~/git': 10,
+      \ '~/code': 20,
+      \ '~/vcs': 30,
+      \ '~/work': 40,
+      \ '~/projects': 50,
+      \ '~/.vim/bundle': 9000,
+      \ }
+endif
+
 fu! s:syntax()
   if !ctrlp#nosy()
     cal ctrlp#hicheck('CtrlPTabExtra', 'Comment')
@@ -36,17 +47,21 @@ fu! s:syntax()
   en
 endf
 
-function! ctrlp#project#init()
-  let default = [
-        \ '~/git', '~/code', '~/vcs', '~/work', '~/projects']
+function! s:sort(a1, b1)
+  return g:ctrlp_projects[a:a1] - g:ctrlp_projects[a:b1]
+endfunction
 
-  for dir in extend(default, g:ctrlp_project_roots)
+function! ctrlp#project#init()
+  let results = {}
+
+  for dir in keys(g:ctrlp_projects)
     let path = fnamemodify(expand(dir), ':a')
+    let results[dir] = {}
     for fp in split(globpath(path, '*'), '\n')
       if len(globpath(fp, '.git', 1)) != 0
         let submodules = globpath(fp, '.gitmodules', 1)
         let key = fnamemodify(path, ':t') . '/' . fnamemodify(fp, ':t')
-        let s:projects[key] = fp
+        let results[dir][key] = fp
 
         " Submodule support
         if len(submodules) != 0
@@ -54,7 +69,8 @@ function! ctrlp#project#init()
             let ret = matchlist(line, '^\s*path = \(.*\)$')
             if len(ret) != 0
               let spath = fp . '/' . ret[1]
-              let s:projects[key . '/' . fnamemodify(ret[1], ':t')] = spath
+              let skey = key . '/' . fnamemodify(ret[1], ':t')
+              let results[dir][skey] = spath
             endif
           endfor
         endif
@@ -62,8 +78,14 @@ function! ctrlp#project#init()
     endfor
   endfor
 
+  let ret = []
+  for key in sort(keys(results), 's:sort')
+    let ret = extend(ret, sort(keys(results[key])))
+    let s:projects = extend(s:projects, results[key])
+  endfor
+
   cal s:syntax()
-  return sort(keys(s:projects))
+  return ret
 endfunc
 
 function! ctrlp#project#accept(mode, str)
@@ -74,8 +96,7 @@ function! ctrlp#project#accept(mode, str)
     exec s:modes[a:mode]
   endif
 
-  cd `=s:projects[a:str]`
-  call ctrlp#init(0, {})
+  call ctrlp#init(0, {'dir': s:projects[a:str]})
 endfunction
 
 function! ctrlp#project#exit()
