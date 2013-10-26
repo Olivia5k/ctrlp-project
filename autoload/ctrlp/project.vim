@@ -14,6 +14,11 @@ let s:project_var = {
 \}
 
 let s:projects = {}
+let s:modes = {
+      \ 'h': 'split',
+      \ 'v': 'vsplit',
+      \ 't': 'tabedit',
+      \ }
 
 if exists('g:ctrlp_ext_vars') && !empty(g:ctrlp_ext_vars)
   let g:ctrlp_ext_vars = add(g:ctrlp_ext_vars, s:project_var)
@@ -63,6 +68,12 @@ endfunc
 
 function! ctrlp#project#accept(mode, str)
   call ctrlp#exit()
+
+  " Split, vsplit or tab
+  if a:mode != 'e'
+    exec s:modes[a:mode]
+  endif
+
   cd `=s:projects[a:str]`
   call ctrlp#init(0, {})
 endfunction
