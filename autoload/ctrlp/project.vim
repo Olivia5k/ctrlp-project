@@ -33,7 +33,6 @@ if !exists('g:ctrlp_projects') || empty(g:ctrlp_projects)
       \ '~/vcs': 30,
       \ '~/work': 40,
       \ '~/projects': 50,
-      \ '~/.vim/bundle': 9000,
       \ }
 endif
 
