@@ -26,6 +26,15 @@ else
   let g:ctrlp_ext_vars = [s:project_var]
 endif
 
+if !exists('g:ctrlp_project_cache')
+  let g:ctrlp_project_cache = expand('~/.cache/ctrlp/project')
+endif
+
+" Make sure that it always exists
+if !filereadable(g:ctrlp_project_cache)
+  call writefile([], g:ctrlp_project_cache)
+endif
+
 if !exists('g:ctrlp_projects') || empty(g:ctrlp_projects)
   let g:ctrlp_projects = {
       \ '~/git': 10,
@@ -50,8 +59,29 @@ function! s:sort(a1, b1)
   return g:ctrlp_projects[a:a1] - g:ctrlp_projects[a:b1]
 endfunction
 
+function! s:mru_sort(a1, b1)
+  if !has_key(g:cpmru, a:a1) && !has_key(g:cpmru, a:b1)
+    return 0
+  elseif has_key(g:cpmru, a:a1) && !has_key(g:cpmru, a:b1)
+    return -1
+  elseif !has_key(g:cpmru, a:a1) && has_key(g:cpmru, a:b1)
+    return 1
+  endif
+
+  return g:cpmru[a:b1] - g:cpmru[a:a1]
+endfunction
+
 function! ctrlp#project#init()
   let results = {}
+  let g:cpmru = {}
+
+  " Read the MRU file
+  for key in readfile(g:ctrlp_project_cache)
+    if !has_key(g:cpmru, key)
+      let g:cpmru[key] = 0
+    endif
+    let g:cpmru[key] += 1
+  endfor
 
   for dir in keys(g:ctrlp_projects)
     let path = fnamemodify(expand(dir), ':a')
@@ -77,11 +107,15 @@ function! ctrlp#project#init()
     endfor
   endfor
 
+  " Apply score sorting
   let ret = []
   for key in sort(keys(results), 's:sort')
     let ret = extend(ret, sort(keys(results[key])))
     let s:projects = extend(s:projects, results[key])
   endfor
+
+  " And finally apply MRU sorting. Ineffective, but shh.
+  let ret = sort(ret, 's:mru_sort')
 
   cal s:syntax()
   return ret
@@ -94,6 +128,10 @@ function! ctrlp#project#accept(mode, str)
   if a:mode != 'e'
     exec s:modes[a:mode]
   endif
+
+  " Write into use list
+  let cachefile = g:ctrlp_project_cache
+  call writefile(readfile(cachefile) + [a:str], cachefile)
 
   call ctrlp#init(0, {'dir': s:projects[a:str]})
 endfunction
