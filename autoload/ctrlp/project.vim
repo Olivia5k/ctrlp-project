@@ -27,7 +27,7 @@ else
 endif
 
 if !exists('g:ctrlp_project_cache')
-  let g:ctrlp_project_cache = expand('~/.cache/ctrlp/project')
+  let g:ctrlp_project_cache = expand('~/.cache/ctrlp-project')
 endif
 
 " Make sure that it always exists
