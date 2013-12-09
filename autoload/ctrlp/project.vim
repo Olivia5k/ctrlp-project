@@ -88,15 +88,15 @@ function! s:dirweight(dir)
 endfunction
 
 function! s:mru_sort(a1, b1)
-  if !has_key(g:cpmru, a:a1) && !has_key(g:cpmru, a:b1)
+  if !has_key(s:cpmru, a:a1) && !has_key(s:cpmru, a:b1)
     return 0
-  elseif has_key(g:cpmru, a:a1) && !has_key(g:cpmru, a:b1)
+  elseif has_key(s:cpmru, a:a1) && !has_key(s:cpmru, a:b1)
     return -1
-  elseif !has_key(g:cpmru, a:a1) && has_key(g:cpmru, a:b1)
+  elseif !has_key(s:cpmru, a:a1) && has_key(s:cpmru, a:b1)
     return 1
   endif
 
-  return g:cpmru[a:b1] - g:cpmru[a:a1]
+  return s:cpmru[a:b1] - s:cpmru[a:a1]
 endfunction
 
 function! s:index_sort(a1, b1)
@@ -105,14 +105,14 @@ endfunction
 
 function! ctrlp#project#init()
   let results = {}
-  let g:cpmru = {}
+  let s:cpmru = {}
 
   " Read the MRU file
   for key in readfile(g:ctrlp_project_cache)
-    if !has_key(g:cpmru, key)
-      let g:cpmru[key] = 0
+    if !has_key(s:cpmru, key)
+      let s:cpmru[key] = 0
     endif
-    let g:cpmru[key] += 1
+    let s:cpmru[key] += 1
   endfor
 
   for dir in g:ctrlp_projects
