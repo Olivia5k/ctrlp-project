@@ -35,26 +35,6 @@ if !filereadable(g:ctrlp_project_cache)
   call writefile([], g:ctrlp_project_cache)
 endif
 
-if !exists('g:ctrlp_projects') || empty(g:ctrlp_projects)
-  let g:ctrlp_projects = {
-      \ '~/git': 10,
-      \ '~/code': 20,
-      \ '~/vcs': 30,
-      \ '~/work': 40,
-      \ '~/projects': 50,
-      \ }
-endif
-
-fu! s:syntax()
-  if !ctrlp#nosy()
-    cal ctrlp#hicheck('CtrlPTabExtra', 'Comment')
-    cal ctrlp#hicheck('CtrlPProjectSubmodule', 'Statement')
-    " y u no work
-    sy match CtrlPProjectSubmodule '.*/\zs.\+\ze/'
-    sy match CtrlPTabExtra '^\zs[^/]*/\ze'
-  en
-endf
-
 " Guess project roots. Will traverse $HOME for directories that contain more
 " than three git repositories. If it does, add it to the list of project roots.
 function! s:guess_roots() abort
@@ -79,8 +59,32 @@ function! s:guess_roots() abort
   return roots
 endfunction
 
+if !exists('g:ctrlp_projects') || empty(g:ctrlp_projects)
+  let g:ctrlp_projects = s:guess_roots()
+endif
+
+fu! s:syntax()
+  if !ctrlp#nosy()
+    cal ctrlp#hicheck('CtrlPTabExtra', 'Comment')
+    cal ctrlp#hicheck('CtrlPProjectSubmodule', 'Statement')
+    " y u no work
+    sy match CtrlPProjectSubmodule '.*/\zs.\+\ze/'
+    sy match CtrlPTabExtra '^\zs[^/]*/\ze'
+  en
+endf
+
 function! s:sort(a1, b1)
-  return g:ctrlp_projects[a:a1] - g:ctrlp_projects[a:b1]
+  " Sort by which directory contains the most repositories
+  return s:dirweight(a:b1) - s:dirweight(a:a1)
+endfunction
+
+function! s:dirweight(dir)
+  " Return number of repositories in path
+  let ret = 0
+  for dir in split(globpath(a:dir, '*'), '\n')
+    let ret += isdirectory(dir . '/.git/')
+  endfor
+  return ret
 endfunction
 
 function! s:mru_sort(a1, b1)
@@ -107,7 +111,7 @@ function! ctrlp#project#init()
     let g:cpmru[key] += 1
   endfor
 
-  for dir in keys(g:ctrlp_projects)
+  for dir in g:ctrlp_projects
     let path = fnamemodify(expand(dir), ':a')
     let results[dir] = {}
     for fp in split(globpath(path, '*'), '\n')
