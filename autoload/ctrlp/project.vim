@@ -56,7 +56,7 @@ function! s:guess_roots() abort
     endfor
   endfor
 
-  return roots
+  return sort(roots, 's:weight_sort')
 endfunction
 
 if !exists('g:ctrlp_projects') || empty(g:ctrlp_projects)
@@ -73,7 +73,7 @@ fu! s:syntax()
   en
 endf
 
-function! s:sort(a1, b1)
+function! s:weight_sort(a1, b1)
   " Sort by which directory contains the most repositories
   return s:dirweight(a:b1) - s:dirweight(a:a1)
 endfunction
@@ -97,6 +97,10 @@ function! s:mru_sort(a1, b1)
   endif
 
   return g:cpmru[a:b1] - g:cpmru[a:a1]
+endfunction
+
+function! s:index_sort(a1, b1)
+  return index(g:ctrlp_projects, a:a1) - index(g:ctrlp_projects, a:b1)
 endfunction
 
 function! ctrlp#project#init()
@@ -137,7 +141,7 @@ function! ctrlp#project#init()
 
   " Apply score sorting
   let ret = []
-  for key in sort(keys(results), 's:sort')
+  for key in sort(keys(results), 's:index_sort')
     let ret = extend(ret, sort(keys(results[key])))
     let s:projects = extend(s:projects, results[key])
   endfor
