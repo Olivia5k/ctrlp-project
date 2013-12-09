@@ -55,6 +55,30 @@ fu! s:syntax()
   en
 endf
 
+" Guess project roots. Will traverse $HOME for directories that contain more
+" than three git repositories. If it does, add it to the list of project roots.
+function! s:guess_roots() abort
+  let roots = []
+  for root in split(globpath(expand('~'), '*'), '\n')
+    if !isdirectory(root)
+      continue
+    endif
+
+    let idx = 0
+    for dir in split(globpath(root, '*'), '\n')
+      if isdirectory(dir . '/.git/')
+        let idx += 1
+        if idx == 3
+          let roots = add(roots, root)
+          break
+        endif
+      endif
+    endfor
+  endfor
+
+  return roots
+endfunction
+
 function! s:sort(a1, b1)
   return g:ctrlp_projects[a:a1] - g:ctrlp_projects[a:b1]
 endfunction
